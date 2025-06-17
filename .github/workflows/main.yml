@@ -4,39 +4,41 @@ on: push
 
 jobs:
   build-and-package:
-    defaults:
-      run:
-        shell: bash
-
-    runs-on: rafradek/ubuntu2004dev:latest
+    runs-on: ubuntu-24.04
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: Build
-      run: |
-        sudo apt install libssl-dev g++-multilib make libtool curl zip
-        chmod u+x ./build.sh
-        ./build.sh
-        mkdir -p package/addons
-        cp -a sourcemod package/addons/
-        mkdir -p package/addons/sourcemod/extensions/x64
-        cp -a Release/system2.ext.so package/addons/sourcemod/extensions/x64/
-        cd package
-        zip -y -q -FSr ../package.zip *
-        
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: System2-linux
-        path: Release/system2.ext.so
-        
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: build/release/package.zip
-        token: ${{ secrets.GITHUB_TOKEN }}
-        draft: true
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev g++-multilib make libtool curl zip
+
+      - name: Build
+        run: |
+          chmod u+x ./build.sh
+          ./build.sh
+
+      - name: Package build artifacts
+        run: |
+          mkdir -p package/addons/sourcemod/extensions/x64
+          cp -a sourcemod package/addons/
+          cp -a Release/system2.ext.so package/addons/sourcemod/extensions/x64/
+          cd package
+          zip -y -q -FSr ../package.zip *
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: System2-linux
+          path: Release/system2.ext.so
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: package.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: true
